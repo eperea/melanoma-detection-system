@@ -336,7 +336,7 @@ elif menu_option == "📚 Documentación Técnica":
     
     st.markdown("Este manual describe la arquitectura, tecnologías e impacto del sistema.")
     
-    doc_tabs = st.tabs(["🚀 Resumen Ejecutivo", "🏗️ Arquitectura", "🧠 Modelos de IA", "📈 Impacto en Salud"])
+    doc_tabs = st.tabs(["🚀 Resumen Ejecutivo", "🏗️ Arquitectura", "🧠 Modelos de IA", "📈 Impacto en Salud", "🎓 Glosario (Estudio)"])
     
     with doc_tabs[0]:
         st.markdown("""
@@ -356,26 +356,54 @@ elif menu_option == "📚 Documentación Técnica":
         st.info("💡 **Objetivo:** Proveer una segunda opinión objetiva y rápida al especialista médico.")
 
     with doc_tabs[1]:
-        st.markdown("### Stack Tecnológico")
+        st.markdown("### Arquitectura del Sistema")
+        st.markdown("El sistema sigue una arquitectura de microservicios contenerizados:")
         
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.markdown("#### Frontend & Backend")
-            st.markdown("- **Python 3.9+**")
-            st.markdown("- **Streamlit:** Interfaz Web interactiva.")
-            st.markdown("- **Docker:** Contenerización para despliegue.")
+        st.graphviz_chart("""
+        digraph Architecture {
+            rankdir=LR;
+            node [shape=box, style=filled, fillcolor="#f0f2f6", fontname="Sans"];
+            
+            subgraph cluster_client {
+                label = "Cliente";
+                style=dashed;
+                Browser [label="🖥️ Navegador Web\n(Usuario Médico)", fillcolor="#e3f2fd"];
+            }
+            
+            subgraph cluster_server {
+                label = "Servidor VPS (Docker Host)";
+                style=filled;
+                color="#eeeeee";
+                
+                subgraph cluster_app {
+                    label = "Contenedor App";
+                    color=white;
+                    Streamlit [label="⚡ Streamlit\n(Frontend + Backend)", fillcolor="#fff3e0"];
+                    Model_SR [label="🔍 Modelo SRCNN\n(Super-Resolución)", shape=ellipse, fillcolor="#e8f5e9"];
+                    Model_CL [label="🧠 MobileNetV2\n(Clasificación)", shape=ellipse, fillcolor="#e8f5e9"];
+                }
+                
+                subgraph cluster_db {
+                    label = "Contenedor DB";
+                    color=white;
+                    Postgres [label="🗄️ PostgreSQL\n(Datos Pacientes)", fillcolor="#e1bee7"];
+                }
+            }
+            
+            Browser -> Streamlit [label="HTTP/HTTPS"];
+            Streamlit -> Model_SR [label="Imágenes"];
+            Model_SR -> Model_CL [label="Imagen SR"];
+            Streamlit -> Postgres [label="SQL (Lectura/Escritura)"];
+        }
+        """)
         
-        with col2:
-            st.markdown("#### Inteligencia Artificial")
-            st.markdown("- **TensorFlow/Keras:** Clasificación.")
-            st.markdown("- **PyTorch:** Super-Resolución.")
-            st.markdown("- **OpenCV/PIL:** Procesamiento de imágenes.")
-        
-        with col3:
-            st.markdown("#### Datos e Infraestructura")
-            st.markdown("- **PostgreSQL:** Base de datos relacional.")
-            st.markdown("- **Github:** Control de versiones.")
-            st.markdown("- **Docker Compose:** Orquestación.")
+        st.markdown("""
+        **Flujo de Datos:**
+        1.  El usuario sube una imagen al navegador.
+        2.  Streamlit recibe la imagen y la pasa al modelo **SRCNN** para mejorarla.
+        3.  La imagen mejorada entra a **MobileNetV2** para obtener la probabilidad de Melanoma.
+        4.  Los resultados y datos del paciente se guardan en **PostgreSQL**.
+        """)
 
     with doc_tabs[2]:
         st.markdown("### 🧠 Modelos de Inteligencia Artificial")
@@ -414,7 +442,24 @@ elif menu_option == "📚 Documentación Técnica":
         
         1.  **Tamizaje Masivo:** Esta herramienta permite filtrar casos sospechosos rápidamente en zonas rurales o centros de atención primaria.
         2.  **Reducción de Biopsias:** Al tener una alta precisión en descartar casos benignos (Nevus), se evitan procedimientos invasivos innecesarios.
-        3.  **Registro Histórico:** La base de datos permite monitorear la evolución de lunares en el tiempo, crucial para detectar cambios malignos.
+    with doc_tabs[4]:
+        st.markdown("### 🎓 Glosario de Conceptos Clave (Para estudio)")
+        
+        st.markdown("""
+        #### 1. Inteligencia Artificial y Deep Learning
+        *   **Red Neuronal Convolucional (CNN):** Tipo de IA diseñada para procesar imágenes. Funciona como el ojo humano, detectando primero bordes simples y luego formas complejas a medida que profundiza en las capas.
+        *   **Transfer Learning:** Técnica de "reciclaje" de conocimiento. En lugar de enseñar al modelo desde cero (que requiere millones de imágenes), tomamos uno que ya sabe ver (entrenado en ImageNet) y le enseñamos solo la parte específica de dermatología. Es más rápido y eficiente.
+        *   **Data Augmentation:** Estrategia para multiplicar los datos de entrenamiento creando variaciones artificiales de las imágenes originales (rotaciones, zoom, espejos) para evitar que el modelo "memorice" y aprenda a generalizar.
+
+        #### 2. Métricas de Evaluación
+        *   **Accuracy (Exactitud):** Porcentaje total de aciertos. (Ej: 97% significa que de 100 casos, 97 fueron correctos). *Cuidado: En datos desbalanceados puede ser engañoso.*
+        *   **Recall (Sensibilidad):** Capacidad del modelo para encontrar a **TODOS** los enfermos. Es la métrica más importante en medicina. Un Recall bajo significa que se escapan casos peligrosos.
+        *   **Precision (Precisión):** Cuando el modelo dice "es cáncer", ¿qué tan seguro es? Una precisión baja significa muchas "falsas alarmas".
+        *   **Confusion Matrix:** Tabla que muestra dónde se equivocó el modelo (Falsos Positivos vs Falsos Negativos).
+
+        #### 3. Tecnología
+        *   **Docker:** Tecnología que empaqueta la aplicación con todas sus librerías necesarias. Garantiza que si funciona en mi máquina, funcione en cualquier servidor ("It works on my machine").
+        *   **Microservicios:** Arquitectura donde la App y la Base de Datos viven en contenedores separados que hablan entre sí, facilitando el mantenimiento.
         """)
 
 # =====================================================
