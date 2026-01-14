@@ -1,6 +1,6 @@
 streamlit==1.32.0
-torch
-torchvision
+# torch eliminado de aquí para instalar versión CPU en Dockerfile
+# torchvision eliminado de aquí
 # tensorflow (Ya incluido en la imagen base)
 # keras (Ya incluido)
 opencv-python-headless
