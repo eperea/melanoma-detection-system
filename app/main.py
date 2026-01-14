@@ -441,7 +441,9 @@ elif menu_option == "📚 Documentación Técnica":
         El melanoma es uno de los cánceres más agresivos pero **altamente curable si se detecta a tiempo**.
         
         1.  **Tamizaje Masivo:** Esta herramienta permite filtrar casos sospechosos rápidamente en zonas rurales o centros de atención primaria.
-        2.  **Reducción de Biopsias:** Al tener una alta precisión en descartar casos benignos (Nevus), se evitan procedimientos invasivos innecesarios.
+        3.  **Registro Histórico:** La base de datos permite monitorear la evolución de lunares en el tiempo, crucial para detectar cambios malignos.
+        """)
+
     with doc_tabs[4]:
         st.markdown("### 🎓 Glosario de Conceptos Clave (Para estudio)")
         
