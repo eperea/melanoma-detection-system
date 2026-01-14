@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image
 import io
 from datetime import datetime
+import pytz
 
 # Importar lógica
 from logic.sr_model import SRPredictor
@@ -192,7 +193,10 @@ if menu_option == "🆕 Nuevo Análisis" and models_loaded:
             with col_res2:
                 st.metric("Confianza", f"{confidence:.1%}")
             with col_res3:
-                st.metric("Fecha", datetime.now().strftime("%d/%m/%Y %H:%M"))
+                # Obtener hora Colombia
+                bogota_tz = pytz.timezone('America/Bogota')
+                current_time = datetime.now(bogota_tz)
+                st.metric("Fecha", current_time.strftime("%d/%m/%Y %H:%M"))
             
             # Probabilidades detalladas
             st.write("**Probabilidades por clase:**")
