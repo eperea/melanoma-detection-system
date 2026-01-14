@@ -140,7 +140,7 @@ if menu_option == "🆕 Nuevo Análisis" and models_loaded:
         
         with col1:
             st.subheader("Imagen Original")
-            st.image(image_original, use_container_width=True)
+            st.image(image_original, use_column_width=True)
             st.caption(f"Resolución: {image_original.size[0]}×{image_original.size[1]} px")
         
         # Validar datos del paciente
@@ -171,7 +171,7 @@ if menu_option == "🆕 Nuevo Análisis" and models_loaded:
             # Mostrar imagen SR
             with col2:
                 st.subheader("Imagen Mejorada (SR)")
-                st.image(sr_image_pil, use_container_width=True)
+                st.image(sr_image_pil, use_column_width=True)
                 st.caption(f"Resolución: {sr_image_pil.size[0]}×{sr_image_pil.size[1]} px")
             
             progress_bar.progress(100, text="¡Análisis completado!")
