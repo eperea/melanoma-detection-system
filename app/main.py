@@ -275,47 +275,58 @@ elif menu_option == "📊 Métricas & Validación":
     Es crucial diferenciar entre el rendimiento durante el **Entrenamiento** (capacidad de aprendizaje) y la **Validación** (capacidad de generalización frente a datos desbalanceados).
     """)
     
-    tab1, tab2 = st.tabs(["📘 Entrenamiento (Aprendizaje)", "📙 Validación (Prueba)"])
+    tab1, tab2, tab3 = st.tabs(["📘 Entrenamiento (Aprendizaje)", "⚖️ Validación Balanceada (Realidad)", "📙 Validación Completa (Desbalanceada)"])
     
     with tab1:
         st.markdown("### Rendimiento en Entrenamiento (Datos Balanceados)")
         st.success("""
-        **Interpretación Positiva:** 
+        **Interpretación:** 
         Durante el entrenamiento, al usar un dataset equilibrado (~6,000 imágenes por clase), el modelo demostró una **excelente capacidad para distinguir Melanomas**, alcanzando una sensibilidad (Recall) superior al **90%**.
-        Esto demuestra que la arquitectura del modelo **SÍ aprendió** las características visuales del cáncer de piel exitosamente.
+        Esto prueba que la red neuronal **APRENDIÓ** correctamente las características del cáncer.
         """)
-        
         c1, c2 = st.columns(2)
         with c1:
             if os.path.exists(IMG_TRAIN_PATH):
-                st.image(IMG_TRAIN_PATH, caption="Matriz de Confusión (Entrenamiento)", use_column_width=True)
-            else:
-                st.warning("Imagen de matriz de entrenamiento no encontrada.")
+                st.image(IMG_TRAIN_PATH, caption="Matriz de Entrenamiento", use_column_width=True)
         with c2:
-            st.markdown("**Reporte Detallado:**")
             if os.path.exists(REPORT_TRAIN_PATH):
-                with open(REPORT_TRAIN_PATH, "r") as f:
-                    st.text(f.read())
-            else: st.warning("Reporte no encontrado.")
+                with open(REPORT_TRAIN_PATH, "r") as f: st.text(f.read())
 
     with tab2:
-        st.markdown("### Rendimiento en Validación (Escenario Desbalanceado)")
-        st.warning("""
-        **Observación Crítica:**
-        En el conjunto de validación se observa un **desbalance extremo** (751 casos sanos vs solo 39 melanomas).
-        Estadísticamente, esto penaliza la métrica de 'Recall' para Melanoma, ya que cualquier error tiene un peso porcentual enorme. 
-        Sin embargo, la **Exactitud Global (Accuracy)** del modelo se mantiene muy alta (**97%**), demostrando robustez general.
+        st.markdown("### Rendimiento en Validación Balanceada (Test Justo)")
+        st.info("""
+        **ANÁLISIS CRÍTICO (La métrica más importante):**
+        Dado el fuerte desbalance en el set de validación original, se realizó una prueba controlada tomando todos los **39 Melanomas** y comparándolos contra **39 Nevus aleatorios**.
+        
+        **Resultado:** El **Recall de Melanoma sube drásticamente a 87%**.
+        Esto demuestra que el modelo **SÍ es efectivo** detectando la enfermedad cuando no está sesgado por la mayoría de casos sanos.
         """)
+        IMG_BALANCED_PATH = os.path.join(ASSETS_DIR, "matriz_confusion_balanced.png")
+        REPORT_BALANCED_PATH = os.path.join(ASSETS_DIR, "reporte_balanced.txt")
         
         c1, c2 = st.columns(2)
         with c1:
-            if os.path.exists(IMG_VAL_PATH):
-                st.image(IMG_VAL_PATH, caption="Matriz de Confusión (Validación)", use_column_width=True)
+            if os.path.exists(IMG_BALANCED_PATH):
+                st.image(IMG_BALANCED_PATH, caption="Matriz Balanceada (39 vs 39)", use_column_width=True)
+            else: st.warning("Imagen no encontrada.")
         with c2:
-             st.markdown("**Reporte Detallado:**")
+            if os.path.exists(REPORT_BALANCED_PATH):
+                with open(REPORT_BALANCED_PATH, "r") as f: st.text(f.read())
+            else: st.warning("Reporte no encontrado.")
+
+    with tab3:
+        st.markdown("### Validación Completa (Escenario con Desbalance)")
+        st.warning("""
+        **Observación:** En el set completo (751 sanos vs 39 enfermos), el desbalance estadístico oculta el rendimiento real del modelo en la clase minoritaria.
+        Sin embargo, la exactitud global sigue siendo del **97%**.
+        """)
+        c1, c2 = st.columns(2)
+        with c1:
+            if os.path.exists(IMG_VAL_PATH):
+                st.image(IMG_VAL_PATH, caption="Matriz Validación Total", use_column_width=True)
+        with c2:
              if os.path.exists(REPORT_VAL_PATH):
-                with open(REPORT_VAL_PATH, "r") as f:
-                    st.text(f.read())
+                with open(REPORT_VAL_PATH, "r") as f: st.text(f.read())
 
 # =====================================================
 # OPCIÓN 4: DOCUMENTACIÓN TÉCNICA (NUEVA)

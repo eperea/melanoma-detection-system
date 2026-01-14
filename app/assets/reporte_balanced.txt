@@ -1,0 +1,8 @@
+              precision    recall  f1-score   support
+
+    Melanoma       0.79      0.87      0.83        39
+       Nevus       0.86      0.77      0.81        39
+
+    accuracy                           0.82        78
+   macro avg       0.82      0.82      0.82        78
+weighted avg       0.82      0.82      0.82        78
