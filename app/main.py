@@ -367,18 +367,33 @@ elif menu_option == "📚 Documentación Técnica":
             st.markdown("- **Docker Compose:** Orquestación.")
 
     with doc_tabs[2]:
-        st.markdown("### Modelos de Inteligencia Artificial")
+        st.markdown("### 🧠 Modelos de Inteligencia Artificial")
         
         st.markdown("""
-        #### 1. Super-Resolución (SRCNN)
-        - **Arquitectura:** Super-Resolution Convolutional Neural Network.
-        - **Función:** Toma una imagen de baja resolución o borrosa, la escala y reconstruye los detalles perdidos mediante capas convolucionales.
-        - **Beneficio:** Permite ver mejor los bordes irregulares de los lunares (regla ABCD del melanoma).
+        #### 1. Clasificación: MobileNetV2 (La elección estratégica)
         
-        #### 2. Clasificación (MobileNetV2)
-        - **Arquitectura:** Red profunda optimizada para dispositivos móviles y web (ligera y rápida).
-        - **Técnica:** Transfer Learning (entrenada con ImageNet y re-entrenada con HAM10000).
-        - **Dataset:** HAM10000 (Human Against Machine), base de datos dermatoscópica estándar.
+        El núcleo del diagnóstico es **MobileNetV2**. Se seleccionó esta arquitectura por encima de opciones más pesadas (como ResNet50 o VGG16) por las siguientes razones técnicas fundamentales para un despliegue real:
+        
+        **A. Eficiencia Extrema (Depthwise Separable Convolutions):**
+        *   A diferencia de las redes tradicionales que realizan convoluciones completas, MobileNetV2 divide la operación en dos pasos:
+            1.  **Depthwise Convolution:** Filtra cada canal de entrada de forma independiente.
+            2.  **Pointwise Convolution (1x1):** Combina los resultados.
+        *   **Resultado:** Reduce el número de cálculos y parámetros entre 8 y 9 veces, manteniendo una precisión comparable. Esto es crucial para que el sistema responda rápido en servidores web estándar sin GPU costosas.
+        
+        **B. Arquitectura de "Inverted Residuals":**
+        *   Introduce bloques residuales invertidos con "Linear Bottlenecks".
+        *   Permite que la información fluya mejor a través de las capas profundas sin perderse (Vanishing Gradient problem), logrando una mayor exactitud con menos memoria.
+        
+        **C. Transfer Learning (Aprendizaje por Transferencia):**
+        *   El modelo no empezó desde cero ("Tabula Rasa"). Se utilizaron pesos pre-entrenados en **ImageNet** (1.4 millones de imágenes).
+        *   **Beneficio:** La red ya "sabía" detectar bordes, texturas y formas complejas. Solo tuvimos que "afinarla" (Fine-Tuning) para que aprendiera a distinguir las características específicas de los lunares y el melanoma (asimetría, bordes irregulares, color).
+        
+        ---
+        
+        #### 2. Super-Resolución: SRCNN (Super-Resolution CNN)
+        *   **Objetivo:** Mejorar la calidad de entrada antes de la clasificación.
+        *   **Funcionamiento:** Mapea una imagen de baja resolución a una de alta resolución a través de un mapa de características no lineal.
+        *   **Impacto:** Recupera detalles finos en los bordes de la lesión que podrían haberse perdido por desenfoque o baja calidad de la cámara, ayudando al clasificador a ser más preciso.
         """)
 
     with doc_tabs[3]:
