@@ -1,8 +1,8 @@
 streamlit==1.32.0
 torch
 torchvision
-tensorflow==2.15.1
-keras==2.15.0
+# tensorflow (Ya incluido en la imagen base)
+# keras (Ya incluido)
 opencv-python-headless
 Pillow
 psycopg2-binary
