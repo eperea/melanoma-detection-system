@@ -3,26 +3,45 @@ from tensorflow import keras
 import numpy as np
 from PIL import Image, ImageOps
 
+# Custom DepthwiseConv2D to handle 'groups' argument from older Keras versions
+# Esto soluciona: Unrecognized keyword arguments passed to DepthwiseConv2D: {'groups': 1}
+class CustomDepthwiseConv2D(keras.layers.DepthwiseConv2D):
+    def __init__(self, *args, **kwargs):
+        # Remove 'groups' if present (not valid in newer versions of Keras 2/3 compatibility)
+        kwargs.pop('groups', None)
+        super().__init__(*args, **kwargs)
+
 class MelanomaClassifier:
     def __init__(self, model_path, labels_path):
         """
         Carga el modelo de clasificación Melanoma/Nevus entrenado con MobileNetV2.
         """
-        self.model = keras.models.load_model(model_path, compile=False)
+        # Load model with custom objects to handle version incompatibility
+        custom_objects = {'DepthwiseConv2D': CustomDepthwiseConv2D}
+        try:
+            self.model = keras.models.load_model(model_path, custom_objects=custom_objects, compile=False)
+        except TypeError:
+             # Fallback si falla, intentar cargar normal (aunque probablemente falle igual si el error es de groups)
+             print("⚠️ Warning: Custom loading failed, trying standard load...")
+             self.model = keras.models.load_model(model_path, compile=False)
         
         # Cargar etiquetas correctamente
         # El archivo puede tener formato "0 Melanoma" o solo "Melanoma"
         self.labels = []
-        with open(labels_path, "r") as f:
-            for line in f.readlines():
-                line = line.strip()
-                if line:  # Ignorar líneas vacías
-                    # Si la línea tiene formato "0 Melanoma", extraer solo el nombre
-                    parts = line.split(" ", 1)
-                    if len(parts) == 2 and parts[0].isdigit():
-                        self.labels.append(parts[1])  # Solo tomar "Melanoma"
-                    else:
-                        self.labels.append(line)  # Tomar la línea completa
+        try:
+            with open(labels_path, "r") as f:
+                for line in f.readlines():
+                    line = line.strip()
+                    if line:  # Ignorar líneas vacías
+                        # Si la línea tiene formato "0 Melanoma", extraer solo el nombre
+                        parts = line.split(" ", 1)
+                        if len(parts) == 2 and parts[0].isdigit():
+                            self.labels.append(parts[1])  # Solo tomar "Melanoma"
+                        else:
+                            self.labels.append(line)  # Tomar la línea completa
+        except Exception as e:
+            print(f"❌ Error cargando etiquetas: {e}")
+            self.labels = ["Melanoma", "Nevus"] # Fallback por defecto
         
         print(f"[Classifier] Etiquetas cargadas: {self.labels}")
             
