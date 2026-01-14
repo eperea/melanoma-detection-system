@@ -215,9 +215,6 @@ if menu_option == "🔬 Nuevo Análisis":
 
                 with res_col2:
                     st.markdown("#### Comparativa Visual")
-                with res_col2:
-                    st.markdown("#### Comparativa Visual")
-                    # Usar pestañas para evitar anidamiento excesivo de columnas
                     viz_tabs = st.tabs(["Original", "Mejorada (SR)"])
                     with viz_tabs[0]:
                         st.image(image_original, caption="Original", use_column_width=True)
@@ -226,21 +223,26 @@ if menu_option == "🔬 Nuevo Análisis":
                 
                 st.divider()
                 st.markdown("#### Probabilidades Detalladas")
-                st.progress(prob_melanoma, text=f"Melanoma: {prob_melanoma:.2%}")
-                st.progress(prob_nevus, text=f"Nevus: {prob_nevus:.2%}")
+                prob_col1, prob_col2 = st.columns(2)
+                with prob_col1:
+                    st.metric("Melanoma", f"{prob_melanoma:.2%}")
+                with prob_col2:
+                    st.metric("Nevus", f"{prob_nevus:.2%}")
                 
                 # Botón de descarga de reporte PDF
                 st.divider()
-                analisis_data = {
-                    'fecha_analisis': current_time.strftime('%Y-%m-%d %H:%M'),
-                    'diagnostico': class_name,
-                    'confianza': confidence,
-                    'ubicacion_lesion': ubicacion,
-                    'notas_clinicas': notas,
-                    'probabilidad_melanoma': prob_melanoma,
-                    'probabilidad_nevus': prob_nevus
-                }
-                pdf_bytes = generate_report_pdf(paciente_db, analisis_data)
+                pdf_bytes = generate_report_pdf(
+                    paciente_nombre=paciente_db['nombre'],
+                    paciente_id=paciente_db['identificacion'],
+                    paciente_edad=paciente_db['edad'],
+                    paciente_sexo=paciente_db['sexo'],
+                    ubicacion_lesion=ubicacion,
+                    notas_clinicas=notas,
+                    diagnostico=class_name,
+                    confianza=confidence,
+                    prob_melanoma=prob_melanoma,
+                    prob_nevus=prob_nevus
+                )
                 st.download_button(
                     label="📄 Descargar Reporte PDF",
                     data=pdf_bytes,
@@ -275,7 +277,18 @@ elif menu_option == "🗂️ Historial Pacientes":
                             st.write(f"**Ubicación:** {h['ubicacion_lesion']}")
                         with c2:
                             st.write(f"**Notas:** {h['notas_clinicas'] or 'Sin notas'}")
-                            pdf_bytes = generate_report_pdf(paciente, h)
+                            pdf_bytes = generate_report_pdf(
+                                paciente_nombre=paciente['nombre'],
+                                paciente_id=paciente['identificacion'],
+                                paciente_edad=paciente['edad'],
+                                paciente_sexo=paciente['sexo'],
+                                ubicacion_lesion=h['ubicacion_lesion'],
+                                notas_clinicas=h['notas_clinicas'],
+                                diagnostico=h['diagnostico'],
+                                confianza=h['confianza'],
+                                prob_melanoma=h.get('probabilidad_melanoma', 0),
+                                prob_nevus=h.get('probabilidad_nevus', 0)
+                            )
                             st.download_button(
                                 label="📄 Descargar Reporte PDF",
                                 data=pdf_bytes,
