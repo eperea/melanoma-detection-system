@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Modelos grandes (descargar por separado)
+# app/models/*.h5
+# app/models/*.pth
+
+# Datos de entrenamiento (muy grandes para GitHub)
+dataset_isic_mini/
+temp_train_binary/
+temp_val_binary/
+
+# Logs
+*.log
+
+# Datos temporales
+data/
+*.csv
+
+# Docker volumes
+postgres_data/
+
+# Generados
+matriz_confusion*.png
+reporte_*.txt
