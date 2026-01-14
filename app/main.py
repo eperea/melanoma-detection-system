@@ -229,6 +229,27 @@ if menu_option == "🔬 Nuevo Análisis":
                 st.progress(prob_melanoma, text=f"Melanoma: {prob_melanoma:.2%}")
                 st.progress(prob_nevus, text=f"Nevus: {prob_nevus:.2%}")
                 
+                # Botón de descarga de reporte PDF
+                st.divider()
+                analisis_data = {
+                    'fecha_analisis': current_time.strftime('%Y-%m-%d %H:%M'),
+                    'diagnostico': class_name,
+                    'confianza': confidence,
+                    'ubicacion_lesion': ubicacion,
+                    'notas_clinicas': notas,
+                    'probabilidad_melanoma': prob_melanoma,
+                    'probabilidad_nevus': prob_nevus
+                }
+                pdf_bytes = generate_report_pdf(paciente_db, analisis_data)
+                st.download_button(
+                    label="📄 Descargar Reporte PDF",
+                    data=pdf_bytes,
+                    file_name=f"Reporte_{paciente_db['identificacion']}_{current_time.strftime('%Y%m%d_%H%M')}.pdf",
+                    mime="application/pdf",
+                    type="primary",
+                    use_container_width=True
+                )
+                
 # =====================================================
 # OPCIÓN 2: HISTORIAL
 # =====================================================
