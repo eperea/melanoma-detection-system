@@ -107,150 +107,169 @@ st.sidebar.info("Proyecto de Tesis\n\nIngeniería de Sistemas - IA detectando Me
 if menu_option == "🔬 Nuevo Análisis":
     
     st.markdown('<p class="main-header">Detección Asistida de Melanoma</p>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Análisis de imágenes dermatoscópicas con Super-Resolución y Deep Learning</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-header">Suba una imagen dermatoscópica para obtener un diagnóstico asistido por IA</p>', unsafe_allow_html=True)
 
     if not models_loaded:
         st.error("Los modelos no están cargados. No se puede realizar el análisis.")
         st.stop()
-        
-    col1, col2 = st.columns([1, 2])
     
-    with col1:
-        st.markdown("### 1. Datos del Paciente")
-        id_paciente = st.text_input("Identificación (Cédula/ID)", placeholder="Ej: 123456789")
+    # --- ÁREA PRINCIPAL: IMAGEN ---
+    st.markdown("### 📷 Imagen a Analizar")
+    uploaded_file = st.file_uploader(
+        "Arrastre o seleccione una imagen dermatoscópica (JPG, PNG)", 
+        type=["jpg", "jpeg", "png"],
+        help="Suba una fotografía clara de la lesión cutánea"
+    )
+    
+    # Variables para controlar estado
+    image_original = None
+    file_bytes = None
+    
+    if uploaded_file is not None:
+        image_original = Image.open(uploaded_file).convert("RGB")
+        file_bytes = io.BytesIO()
+        image_original.save(file_bytes, format='JPEG')
+        file_bytes = file_bytes.getvalue()
+        
+        # Mostrar imagen con tamaño controlado
+        col_img, col_info = st.columns([2, 1])
+        with col_img:
+            st.image(image_original, caption=f"📁 {uploaded_file.name}", use_column_width=True)
+        with col_info:
+            st.metric("Resolución", f"{image_original.size[0]} × {image_original.size[1]} px")
+            st.metric("Tamaño", f"{len(file_bytes) / 1024:.1f} KB")
+    
+    st.divider()
+    
+    # --- FORMULARIO COMPACTO ---
+    with st.expander("📋 Datos del Paciente y Observaciones", expanded=True):
+        form_col1, form_col2, form_col3 = st.columns([2, 1, 1])
+        
+        with form_col1:
+            id_paciente = st.text_input("🆔 Identificación", placeholder="Cédula o ID del paciente")
         
         # Buscar paciente existente
         paciente_db = None
         if id_paciente:
             paciente_db = buscar_paciente(id_paciente)
             if paciente_db:
-                st.success(f"Paciente encontrado: {paciente_db['nombre']}")
-                nombre = st.text_input("Nombre Completo", value=paciente_db['nombre'], disabled=True)
-                edad = st.number_input("Edad", min_value=0, max_value=120, value=paciente_db['edad'], disabled=True)
-                sexo = st.selectbox("Sexo", ["Masculino", "Femenino", "Otro"], index=["Masculino", "Femenino", "Otro"].index(paciente_db['sexo']) if paciente_db['sexo'] in ["Masculino", "Femenino", "Otro"] else 0, disabled=True)
+                st.success(f"✅ Paciente encontrado: **{paciente_db['nombre']}**")
+                nombre = paciente_db['nombre']
+                edad = paciente_db['edad']
+                sexo = paciente_db['sexo']
             else:
-                st.info("Paciente nuevo. Por favor registre sus datos.")
-                nombre = st.text_input("Nombre Completo")
-                edad = st.number_input("Edad", min_value=0, max_value=120, value=30)
-                sexo = st.selectbox("Sexo", ["Masculino", "Femenino", "Otro"])
+                with form_col1:
+                    nombre = st.text_input("👤 Nombre Completo", placeholder="Nombre del paciente")
+                with form_col2:
+                    edad = st.number_input("🎂 Edad", min_value=0, max_value=120, value=30)
+                with form_col3:
+                    sexo = st.selectbox("⚧ Sexo", ["Masculino", "Femenino", "Otro"])
         else:
-            nombre = st.text_input("Nombre Completo", disabled=True)
-            edad = st.number_input("Edad", disabled=True)
-            sexo = st.selectbox("Sexo", [], disabled=True)
-
-        st.markdown("### 2. Detalles Clínicos")
-        ubicacion = st.selectbox("Ubicación de la lesión", ["Rostro", "Brazo", "Pierna", "Espalda", "Pecho", "Abdomen", "Otro"])
-        notas = st.text_area("Notas Clínicas (Opcional)", height=100)
-
-    with col2:
-        st.markdown("### 3. Cargar Imagen")
-        print("Esperando imagen...")
-        uploaded_file = st.file_uploader("Arrastre o seleccione una imagen dermatoscópica", type=["jpg", "jpeg", "png"])
+            nombre = None
+            edad = None
+            sexo = None
         
-        if uploaded_file is not None:
-            # Mostrar imagen original
-            image_original = Image.open(uploaded_file).convert("RGB")
-            file_bytes = io.BytesIO()
-            image_original.save(file_bytes, format='JPEG')
-            file_bytes = file_bytes.getvalue()
+        st.markdown("---")
+        obs_col1, obs_col2 = st.columns(2)
+        with obs_col1:
+            ubicacion = st.selectbox("📍 Ubicación de la lesión", ["Rostro", "Brazo", "Pierna", "Espalda", "Pecho", "Abdomen", "Otro"])
+        with obs_col2:
+            notas = st.text_input("📝 Notas Clínicas (Opcional)", placeholder="Observaciones adicionales...")
+    
+    # --- BOTÓN DE ANÁLISIS ---
+    datos_completos = id_paciente and nombre and uploaded_file
+    
+    if not datos_completos:
+        st.info("💡 Complete los datos del paciente y suba una imagen para habilitar el análisis.")
+    
+    if st.button("🚀 Iniciar Análisis con IA", disabled=not datos_completos, type="primary", use_container_width=True):
+        
+        # Registrar/Actualizar paciente si es necesario
+        if not paciente_db:
+            paciente_db = registrar_paciente(id_paciente, nombre, edad, sexo)
+        
+        # --- PROCESO DE IA ---
+        with st.status("Ejecutando pipeline de IA...", expanded=True) as status:
             
-            st.image(image_original, caption="Imagen Subida", use_column_width=True)
+            st.write("🔄 Aplicando Super-Resolución (SRCNN)...")
+            sr_image_array = sr_predictor.predict(file_bytes)
+            sr_image_pil = Image.fromarray(sr_image_array)
             
-            # Botón de análisis
-            datos_completos = id_paciente and nombre
-            if not datos_completos:
-                st.warning("⚠️ Complete los datos del paciente para habilitar el análisis.")
+            st.write("🧠 Clasificando lesión (MobileNetV2)...")
+            original_array = np.array(image_original)
+            class_name, confidence, probabilities = classifier.predict(original_array)
             
-            if st.button("🚀 Iniciar Análisis con IA", disabled=not datos_completos, type="primary", use_container_width=True):
-                
-                # Registrar/Actualizar paciente si es necesario
-                if not paciente_db:
-                    paciente_db = registrar_paciente(id_paciente, nombre, edad, sexo)
-                
-                # --- PROCESO DE IA ---
-                with st.status("Ejecutando pipeline de IA...", expanded=True) as status:
-                    
-                    st.write("🔄 Aplicando Super-Resolución (SRCNN)...")
-                    sr_image_array = sr_predictor.predict(file_bytes)
-                    sr_image_pil = Image.fromarray(sr_image_array)
-                    
-                    st.write("🧠 Clasificando lesión (MobileNetV2)...")
-                    original_array = np.array(image_original) # Usando original para predecir (entrenado así)
-                    class_name, confidence, probabilities = classifier.predict(original_array)
-                    
-                    st.write("💾 Guardando resultados en base de datos...")
-                    prob_melanoma = float(probabilities[0]) if len(probabilities) > 0 else 0.0
-                    prob_nevus = float(probabilities[1]) if len(probabilities) > 1 else 0.0
-                    
-                    guardar_analisis(
-                        paciente_db['id'], ubicacion, notas, 
-                        class_name, confidence, prob_melanoma, prob_nevus
-                    )
-                    
-                    status.update(label="✅ ¡Análisis Completado!", state="complete", expanded=False)
-                
-                # --- RESULTADOS ---
-                st.divider()
-                st.markdown("## 📊 Resultados del Diagnóstico")
-                
-                res_col1, res_col2 = st.columns(2)
-                
-                with res_col1:
-                    is_melanoma = "melanoma" in class_name.lower()
-                    color = "red" if is_melanoma else "green"
-                    icono = "⚠️" if is_melanoma else "✅"
-                    titulo = "MELANOMA (Maligno)" if is_melanoma else "NEVUS (Benigno)"
-                    
-                    st.markdown(f"""
-                    <div style="background-color: {'#ffebee' if is_melanoma else '#e8f5e9'}; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid {color};">
-                        <h2 style="color: {color}; margin:0;">{icono} {titulo}</h2>
-                        <h3 style="margin:0;">Confianza: {confidence:.2%}</h3>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Fecha Colombia
-                    bogota_tz = pytz.timezone('America/Bogota')
-                    current_time = datetime.now(bogota_tz)
-                    st.caption(f"Fecha de Análisis: {current_time.strftime('%d/%m/%Y %H:%M %p')}")
-
-                with res_col2:
-                    st.markdown("#### Comparativa Visual")
-                    viz_tabs = st.tabs(["Original", "Mejorada (SR)"])
-                    with viz_tabs[0]:
-                        st.image(image_original, caption="Original", use_column_width=True)
-                    with viz_tabs[1]:
-                        st.image(sr_image_pil, caption="Mejorada (SR)", use_column_width=True)
-                
-                st.divider()
-                st.markdown("#### Probabilidades Detalladas")
-                prob_col1, prob_col2 = st.columns(2)
-                with prob_col1:
-                    st.metric("Melanoma", f"{prob_melanoma:.2%}")
-                with prob_col2:
-                    st.metric("Nevus", f"{prob_nevus:.2%}")
-                
-                # Botón de descarga de reporte PDF
-                st.divider()
-                pdf_bytes = generate_report_pdf(
-                    paciente_nombre=paciente_db['nombre'],
-                    paciente_id=paciente_db['identificacion'],
-                    paciente_edad=paciente_db['edad'],
-                    paciente_sexo=paciente_db['sexo'],
-                    ubicacion_lesion=ubicacion,
-                    notas_clinicas=notas,
-                    diagnostico=class_name,
-                    confianza=confidence,
-                    prob_melanoma=prob_melanoma,
-                    prob_nevus=prob_nevus
-                )
-                st.download_button(
-                    label="📄 Descargar Reporte PDF",
-                    data=pdf_bytes,
-                    file_name=f"Reporte_{paciente_db['identificacion']}_{current_time.strftime('%Y%m%d_%H%M')}.pdf",
-                    mime="application/pdf",
-                    type="primary",
-                    use_container_width=True
-                )
+            st.write("💾 Guardando resultados en base de datos...")
+            prob_melanoma = float(probabilities[0]) if len(probabilities) > 0 else 0.0
+            prob_nevus = float(probabilities[1]) if len(probabilities) > 1 else 0.0
+            
+            guardar_analisis(
+                paciente_db['id'], ubicacion, notas, 
+                class_name, confidence, prob_melanoma, prob_nevus
+            )
+            
+            status.update(label="✅ ¡Análisis Completado!", state="complete", expanded=False)
+        
+        # --- RESULTADOS ---
+        st.divider()
+        st.markdown("## 📊 Resultados del Diagnóstico")
+        
+        is_melanoma = "melanoma" in class_name.lower()
+        color = "red" if is_melanoma else "green"
+        icono = "⚠️" if is_melanoma else "✅"
+        titulo = "MELANOMA (Maligno)" if is_melanoma else "NEVUS (Benigno)"
+        
+        # Tarjeta de resultado principal
+        st.markdown(f"""
+        <div style="background-color: {'#ffebee' if is_melanoma else '#e8f5e9'}; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid {color}; margin-bottom: 20px;">
+            <h2 style="color: {color}; margin:0;">{icono} {titulo}</h2>
+            <h3 style="margin:0;">Confianza: {confidence:.2%}</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Fecha Colombia
+        bogota_tz = pytz.timezone('America/Bogota')
+        current_time = datetime.now(bogota_tz)
+        
+        # Métricas y comparación
+        met_col1, met_col2, met_col3 = st.columns(3)
+        with met_col1:
+            st.metric("🔴 Melanoma", f"{prob_melanoma:.1%}")
+        with met_col2:
+            st.metric("🟢 Nevus", f"{prob_nevus:.1%}")
+        with met_col3:
+            st.metric("📅 Fecha", current_time.strftime('%d/%m/%Y %H:%M'))
+        
+        # Comparativa visual
+        st.markdown("#### Comparativa de Imagen")
+        img_col1, img_col2 = st.columns(2)
+        with img_col1:
+            st.image(image_original, caption="Original", use_column_width=True)
+        with img_col2:
+            st.image(sr_image_pil, caption="Mejorada (Super-Resolución)", use_column_width=True)
+        
+        # Botón de descarga de reporte PDF
+        st.divider()
+        pdf_bytes = generate_report_pdf(
+            paciente_nombre=paciente_db['nombre'],
+            paciente_id=paciente_db['identificacion'],
+            paciente_edad=paciente_db['edad'],
+            paciente_sexo=paciente_db['sexo'],
+            ubicacion_lesion=ubicacion,
+            notas_clinicas=notas,
+            diagnostico=class_name,
+            confianza=confidence,
+            prob_melanoma=prob_melanoma,
+            prob_nevus=prob_nevus
+        )
+        st.download_button(
+            label="📄 Descargar Reporte PDF",
+            data=pdf_bytes,
+            file_name=f"Reporte_{paciente_db['identificacion']}_{current_time.strftime('%Y%m%d_%H%M')}.pdf",
+            mime="application/pdf",
+            type="primary",
+            use_container_width=True
+        )
                 
 # =====================================================
 # OPCIÓN 2: HISTORIAL
