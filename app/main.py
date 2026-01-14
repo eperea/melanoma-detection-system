@@ -215,10 +215,13 @@ if menu_option == "🔬 Nuevo Análisis":
 
                 with res_col2:
                     st.markdown("#### Comparativa Visual")
-                    comp_col1, comp_col2 = st.columns(2)
-                    with comp_col1:
+                with res_col2:
+                    st.markdown("#### Comparativa Visual")
+                    # Usar pestañas para evitar anidamiento excesivo de columnas
+                    viz_tabs = st.tabs(["Original", "Mejorada (SR)"])
+                    with viz_tabs[0]:
                         st.image(image_original, caption="Original", use_column_width=True)
-                    with comp_col2:
+                    with viz_tabs[1]:
                         st.image(sr_image_pil, caption="Mejorada (SR)", use_column_width=True)
                 
                 st.divider()
