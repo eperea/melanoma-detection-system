@@ -3,77 +3,70 @@ from tensorflow import keras
 import numpy as np
 from PIL import Image, ImageOps
 
-# Custom DepthwiseConv2D to handle 'groups' argument from older Keras versions
-# Esto soluciona: Unrecognized keyword arguments passed to DepthwiseConv2D: {'groups': 1}
-class CustomDepthwiseConv2D(keras.layers.DepthwiseConv2D):
+# --- MONKEY PATCHING PARA ARREGLAR ERROR 'groups' ---
+# El modelo MobileNetV2 guardado tiene 'groups=1' en su configuración,
+# lo cual es inválido en versiones recientes de Keras/TensorFlow.
+# Parcheamos la clase original directamente.
+
+OriginalDepthwiseConv2D = keras.layers.DepthwiseConv2D
+
+class CustomDepthwiseConv2D(OriginalDepthwiseConv2D):
     def __init__(self, *args, **kwargs):
-        # Remove 'groups' if present (not valid in newer versions of Keras 2/3 compatibility)
+        # Eliminar 'groups' si existe en los argumentos
         kwargs.pop('groups', None)
         super().__init__(*args, **kwargs)
+
+# Reemplazar la clase en el módulo keras.layers
+keras.layers.DepthwiseConv2D = CustomDepthwiseConv2D
+# También se necesita inyectar en los objetos personalizados por si acaso
+# ----------------------------------------------------
 
 class MelanomaClassifier:
     def __init__(self, model_path, labels_path):
         """
         Carga el modelo de clasificación Melanoma/Nevus entrenado con MobileNetV2.
         """
-        # Load model with custom objects to handle version incompatibility
+        # Load model explicitly passing context
         custom_objects = {'DepthwiseConv2D': CustomDepthwiseConv2D}
-        try:
-            self.model = keras.models.load_model(model_path, custom_objects=custom_objects, compile=False)
-        except TypeError:
-             # Fallback si falla, intentar cargar normal (aunque probablemente falle igual si el error es de groups)
-             print("⚠️ Warning: Custom loading failed, trying standard load...")
-             self.model = keras.models.load_model(model_path, compile=False)
         
-        # Cargar etiquetas correctamente
-        # El archivo puede tener formato "0 Melanoma" o solo "Melanoma"
+        try:
+            print(f"[Classifier] Intentando cargar modelo desde {model_path}...")
+            self.model = keras.models.load_model(model_path, custom_objects=custom_objects, compile=False)
+            print("[Classifier] ✅ Modelo cargado exitosamente.")
+        except Exception as e:
+            print(f"❌ Error crítico cargando modelo: {e}")
+            # Intentar estrategia de fallback extrema: cargar configuración y pesos por separado si fuera posible
+            # pero por ahora relanzamos para ver el error en logs
+            raise e
+        
+        # Cargar etiquetas
         self.labels = []
         try:
             with open(labels_path, "r") as f:
                 for line in f.readlines():
                     line = line.strip()
-                    if line:  # Ignorar líneas vacías
-                        # Si la línea tiene formato "0 Melanoma", extraer solo el nombre
+                    if line:
                         parts = line.split(" ", 1)
                         if len(parts) == 2 and parts[0].isdigit():
-                            self.labels.append(parts[1])  # Solo tomar "Melanoma"
+                            self.labels.append(parts[1])
                         else:
-                            self.labels.append(line)  # Tomar la línea completa
+                            self.labels.append(line)
         except Exception as e:
             print(f"❌ Error cargando etiquetas: {e}")
-            self.labels = ["Melanoma", "Nevus"] # Fallback por defecto
+            self.labels = ["Melanoma", "Nevus"]
         
         print(f"[Classifier] Etiquetas cargadas: {self.labels}")
             
     def predict(self, image_array):
-        """
-        Clasifica una imagen de lesión cutánea.
-        
-        Args:
-            image_array: numpy array (H, W, 3) uint8 RGB
-            
-        Returns:
-            class_name: Nombre de la clase predicha ("Melanoma" o "Nevus")
-            confidence_score: Confianza de la predicción (0-1)
-            probabilities: Array con probabilidades de cada clase
-        """
+        # ... (código igual al anterior) ...
         target_size = (224, 224)
-        
-        # Convertir numpy array a PIL Image
         image = Image.fromarray(image_array)
-        
-        # Redimensionar manteniendo aspecto y recortando al centro
         image = ImageOps.fit(image, target_size, Image.Resampling.LANCZOS)
-        
-        # Convertir a array y normalizar (IGUAL que en entrenamiento: rescale=1./255)
         image_array_processed = np.asarray(image)
         normalized_image_array = image_array_processed.astype(np.float32) / 255.0
-        
-        # Preparar batch de 1 imagen
         data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
         data[0] = normalized_image_array
         
-        # Predecir
         prediction = self.model.predict(data, verbose=0)
         index = np.argmax(prediction)
         class_name = self.labels[index] if index < len(self.labels) else f"Clase {index}"
