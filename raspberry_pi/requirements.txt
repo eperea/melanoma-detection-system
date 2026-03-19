@@ -1,0 +1,17 @@
+# Dependencias para Raspberry Pi — Versión Económica (Cámara USB)
+# Instalar con: pip3 install -r requirements.txt
+
+# Comunicación HTTP
+requests>=2.28.0
+
+# Procesamiento de imágenes
+Pillow>=9.0.0
+
+# Cámara USB (OpenCV)
+opencv-python-headless>=4.8.0
+
+# GPIO (solo en RPi)
+RPi.GPIO>=0.7.1
+
+# Utilidades
+python-dotenv>=1.0.0
